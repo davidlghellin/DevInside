@@ -47,8 +47,33 @@ lazy val `Day2` = (project in file("Day2"))
 
 addCommandAlias("testc", ";clean;coverage;test;coverageReport")
 // Revisar para excluir en multimodulo
-coverageExcludedPackages:= "es\\.david\\.Main.*"
+coverageExcludedPackages := "es\\.david\\.Main.*"
 
 addCommandAlias("testa", "coverageAggregate")
 coverageMinimum := 50
 coverageFailOnMinimum := true
+
+import scala.sys.process._
+
+lazy val execScript = taskKey[Unit]("Execute the shell script")
+execScript := {
+  "clean_target.sh" !
+}
+
+// https://code.i-harness.com/en/q/17d6a55
+lazy val deleteClass = taskKey[Unit]("Execute frontend scripts")
+
+deleteClass := {
+  val s: TaskStreams = streams.value
+  val shell: Seq[String] = if (sys.props("os.name").contains("Windows")) Seq("cmd", "/c") else Seq("bash", "-c")
+  val removeFiles: Seq[String] = shell :+ "/bin/bash ./clean_target.sh"
+  //val ls: Seq[String] = shell :+ "ls ."
+  s.log.info("Borrando class...")
+  if ((removeFiles !) == 0) {
+    s.log.success("Borrado ficheros successful!")
+  } else {
+    s.log.error("Error!")
+    throw new IllegalStateException("frontend build failed!")
+  }
+  removeFiles !
+}
